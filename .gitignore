@@ -1,0 +1,12 @@
+# Compiled object files
+*.o
+
+# Compiled shader files
+*.spv
+
+# executable
+square
+
+# output image
+output.*
+
