@@ -69,8 +69,7 @@ void disposeImageContext(ImageContext* ctx)
 // renderImage
 //====----------------------------------------------------------------------====
 
-ImageContext renderImage( [[maybe_unused]] uint32_t width, 
-                          [[maybe_unused]] uint32_t height )
+ImageContext renderImage(uint32_t width, uint32_t height)
 {
     ImageContext imageContext = {};
 
@@ -263,7 +262,6 @@ ImageContext renderImage( [[maybe_unused]] uint32_t width,
     }
 
     //  - stages
-    [[maybe_unused]]
     const VkPipelineShaderStageCreateInfo shaderStages[] = {
         {
             .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
