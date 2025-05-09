@@ -520,6 +520,13 @@ ImageContext renderImage(uint32_t width, uint32_t height)
         goto post_cleanup_graphics_pipeline;
     }
 
+    //  - shader modules no longer in use
+    vkDestroyShaderModule(device, fragmentShader, nullptr);
+    fragmentShader = nullptr;
+
+    vkDestroyShaderModule(device, vertexShader, nullptr);
+    vertexShader = nullptr;
+
     //====--------------------------------------------------------------====
     // * Image
 
@@ -676,9 +683,7 @@ ImageContext renderImage(uint32_t width, uint32_t height)
         goto post_render_command;
     }
 
-    //====------------------------------------------------------------------====
-    // * Submit command buffer
-    //
+    //  - submit command buffer
     result = submitCommandBuffer(device, queue, renderCommandBuffer);
 
     if (VK_SUCCESS != result) {
@@ -686,7 +691,11 @@ ImageContext renderImage(uint32_t width, uint32_t height)
     }
 
     //  - wait for events to complete
-    vkDeviceWaitIdle(device);
+    vkQueueWaitIdle(queue);
+
+    //  - command buffer no longer in use
+    vkFreeCommandBuffers(device, commandPool, 1, &renderCommandBuffer);
+    renderCommandBuffer = nullptr;
 
     //====------------------------------------------------------------------====
     // * Destination image
@@ -846,6 +855,13 @@ ImageContext renderImage(uint32_t width, uint32_t height)
         goto post_copy_command;
     }
 
+    //  - wait for events to complete
+    vkQueueWaitIdle(queue);
+
+    //  - command buffer no longer in use
+    vkFreeCommandBuffers(device, commandPool, 1, &copyCommandBuffer);
+    copyCommandBuffer = nullptr;
+
     //====--------------------------------------------------------------====
     // * Copy destination image to host allocated buffer
 
@@ -897,8 +913,10 @@ ImageContext renderImage(uint32_t width, uint32_t height)
 
 post_copy_command:
 
-    vkFreeCommandBuffers(device, commandPool, 1, &copyCommandBuffer);
-    copyCommandBuffer = nullptr;
+    if (nullptr != copyCommandBuffer) {
+        vkFreeCommandBuffers(device, commandPool, 1, &copyCommandBuffer);
+        copyCommandBuffer = nullptr;
+    }
 
 post_cleanup_copy_command_buffer:
 
@@ -911,8 +929,10 @@ post_cleanup_copy_command_buffer:
 post_cleanup_dest_image:
 post_render_command:
 
-    vkFreeCommandBuffers(device, commandPool, 1, &renderCommandBuffer);
-    renderCommandBuffer = nullptr;
+    if (nullptr != renderCommandBuffer) {
+        vkFreeCommandBuffers(device, commandPool, 1, &renderCommandBuffer);
+        renderCommandBuffer = nullptr;
+    }
 
 post_cleanup_render_command_buffer:
 
@@ -949,13 +969,17 @@ post_cleanup_render_pass:
 
 post_cleanup_pipeline_layout:
 
-    vkDestroyShaderModule(device, fragmentShader, nullptr);
-    fragmentShader = nullptr;
+    if (nullptr != fragmentShader) {
+        vkDestroyShaderModule(device, fragmentShader, nullptr);
+        fragmentShader = nullptr;
+    }
 
 post_cleanup_fragment_shader:
 
-    vkDestroyShaderModule(device, vertexShader, nullptr);
-    vertexShader = nullptr;
+    if (nullptr != vertexShader) {
+        vkDestroyShaderModule(device, vertexShader, nullptr);
+        vertexShader = nullptr;
+    }
 
 post_cleanup_vertex_shader:
 
@@ -1087,6 +1111,8 @@ int main( [[maybe_unused]] const int         argc,
         return EXIT_FAILURE;
     }
 
+    // * Save image file
+    //
     auto didSave = saveRGBATIFFFile( "output.tiff",
                                      imageContext.data,
                                      imageContext.width,
@@ -1096,6 +1122,8 @@ int main( [[maybe_unused]] const int         argc,
     //
     disposeImageContext(&imageContext);
 
+    // * Error reporting
+    //
     if (!didSave) 
     {
         puts("Failed to save image file");

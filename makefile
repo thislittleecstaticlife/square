@@ -22,6 +22,11 @@ utilities.o: utilities.c utilities.h
 vertex.spv: vertex.glsl
 fragment.spv: fragment.glsl
 
+.PHONY: test
+test: $(target)
+	rm -f output.*
+	./$(target)
+
 .PHONY: clean
 clean:
 	rm -f $(target) *.o *.spv output.*
